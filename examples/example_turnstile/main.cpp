@@ -1,4 +1,5 @@
 #include "FiniteStateMachine.h"
+#include <memory>
 #include <iostream>
 #include <conio.h>
 #include <string>
@@ -13,23 +14,47 @@ enum class TurnstileStateType
   UNLOCKED,
 };
 
+
+template <typename T> class Func : public State<T>::Functor
+{
+  std::string _name;
+public:
+  explicit Func(std::string name)
+    : _name(name)
+  {
+
+  }
+  void operator()(State<T>& state) override
+  {
+    std::cout << "Called " + _name << std::endl;
+  }
+};
+
 class TurnstileLockedState : public State<TurnstileStateType>
 {
   FiniteStateMachine<TurnstileStateType>& mFsm;
 public:
   TurnstileLockedState(FiniteStateMachine<TurnstileStateType>& fsm)
-    : State<TurnstileStateType>(TurnstileStateType::LOCKED, "Locked")
+    : State<TurnstileStateType>(
+      TurnstileStateType::LOCKED, 
+      "Locked", 
+      new Func<TurnstileStateType>("OnEnter"),
+      new Func<TurnstileStateType>("OnExit"),
+      new Func<TurnstileStateType>("OnUpdate")
+      )
     , mFsm(fsm)
   {
   }
 
   void enter()
   {
+    State<TurnstileStateType>::enter();
     printf("Turnstile state: LOCKED\n");
   }
 
   void update()
   {
+    State<TurnstileStateType>::update();
     if (KeyPresses['c'])
     {
       printf(" - coin inserted, unlocking turnstile\n");
@@ -54,11 +79,13 @@ public:
 
   void enter()
   {
+    State<TurnstileStateType>::enter();
     printf("Turnstile state: UNLOCKED\n");
   }
 
   void update()
   {
+    State<TurnstileStateType>::update();
     if (KeyPresses['p'])
     {
       printf(" - pushed, locking turnstile\n");
@@ -78,11 +105,12 @@ int main(int argc, char* argv)
   printf("--------------------------------------------\n");
 
   // create the state machine for the turnstile.
-  FiniteStateMachine<TurnstileStateType> *fsm = 
-    new FiniteStateMachine<TurnstileStateType>();
+  std::unique_ptr<FiniteStateMachine<TurnstileStateType>> fsm = std::make_unique<FiniteStateMachine<TurnstileStateType>>();
+  std::unique_ptr<TurnstileLockedState> state_locked = std::make_unique<TurnstileLockedState>(*fsm);
+  std::unique_ptr<TurnstileUnLockedState> state_unlocked = std::make_unique<TurnstileUnLockedState>(*fsm);
 
-  fsm->add(new TurnstileLockedState(*fsm));
-  fsm->add(new TurnstileUnLockedState(*fsm));
+  fsm->add(state_locked.get());
+  fsm->add(state_unlocked.get());
 
   fsm->setCurrentState(TurnstileStateType::LOCKED);
 
@@ -103,8 +131,4 @@ int main(int argc, char* argv)
       KeyPresses[i] = false;
   }
   printf("You have exited the program. Good bye!\n");
-
-  delete fsm->getState(TurnstileStateType::UNLOCKED);
-  delete fsm->getState(TurnstileStateType::LOCKED);
-  delete fsm;
 }

@@ -15,7 +15,7 @@ namespace Patterns
     {
     public:
       virtual ~Functor() {}
-      template<typename T> void operator()(State<T>& state)
+      virtual void operator()(State<T>& state)
       {
       }
     };
@@ -34,9 +34,9 @@ namespace Patterns
 
     explicit State(T id,
       std::string name = "default",
-      Functor* onEnter = 0,
-      Functor* onExit = 0,
-      Functor* onUpdate = 0) 
+      Functor* onEnter = nullptr,
+      Functor* onExit = nullptr,
+      Functor* onUpdate = nullptr)
       : mName(name)
       , mID(id)
       , mOnEnter (onEnter)
@@ -44,6 +44,8 @@ namespace Patterns
       , mOnUpdate(onUpdate)
     {
     }
+
+    virtual ~State() {}
 
     virtual void enter()
     {
@@ -99,19 +101,29 @@ namespace Patterns
 
     void add(State<T> *state)
     {
-      if (state == 0)
+      if (state == nullptr)
         return;
-      mStates[state->getID()] = state;
+      add(state->getID(), state);
+      //mStates[state->getID()] = state;
     }
 
     void add(T stateID, State<T>* state)
     {
-      mStates.add(stateID, state);
+      if (mStates.find(stateID) == mStates.end())
+      {
+        mStates.insert(std::make_pair(stateID, state));
+      }
+      else
+      {
+        assert(0);
+      }
     }
 
     State<T>* getState(T stateID)
     {
-      return mStates[stateID];
+      if (mStates.find(stateID) != mStates.end())
+        return mStates[stateID];
+      return nullptr;
     }
 
     State<T>* getCurrentState()
@@ -119,12 +131,19 @@ namespace Patterns
       return mCurrentState;
     }
 
+    const State<T>* getCurrentState() const
+    {
+      return mCurrentState;
+    }
+    
     void setCurrentState(T stateID)
     {
       State<T>* state = getState(stateID);
-      assert(state != 0);
-
-      setCurrentState(state);
+      assert(state != nullptr);
+      if (state != nullptr)
+      {
+        setCurrentState(state);
+      }
     }
 
     void setCurrentState(State<T>* state)
@@ -134,14 +153,14 @@ namespace Patterns
         return;
       }
 
-      if (mCurrentState != 0)
+      if (mCurrentState != nullptr)
       {
         mCurrentState->exit();
       }
 
       mCurrentState = state;
 
-      if (mCurrentState != 0)
+      if (mCurrentState != nullptr)
       {
         mCurrentState->enter();
       }
@@ -149,7 +168,7 @@ namespace Patterns
 
     void update()
     {
-      if (mCurrentState != 0)
+      if (mCurrentState != nullptr)
       {
         mCurrentState->update();
       }

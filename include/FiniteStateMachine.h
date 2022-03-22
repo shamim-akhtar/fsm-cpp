@@ -1,5 +1,5 @@
 #pragma once
-#include <vector>
+#include <memory>
 #include <map>
 #include <string>
 #include <cassert>
@@ -7,18 +7,24 @@
 namespace Patterns
 {
   template <typename T>
+  class FiniteStateMachine;
+
+  template <typename T>
   class State
   {
   public:
-    // A functor for callbacks 
-    class Functor
-    {
-    public:
-      virtual ~Functor() {}
-      virtual void operator()(State<T>& state)
-      {
-      }
-    };
+    // Removing functor. Might be redundant for now.
+    // Will bring back later is needed.
+    // 
+    //// A functor for callbacks 
+    //class Functor
+    //{
+    //public:
+    //  virtual ~Functor() {}
+    //  virtual void operator()(State<T>& state)
+    //  {
+    //  }
+    //};
 
   public:
     // The ID of the state.
@@ -32,16 +38,24 @@ namespace Patterns
       return mName;
     }
 
-    explicit State(T id,
-      std::string name = "default",
-      Functor* onEnter = nullptr,
-      Functor* onExit = nullptr,
-      Functor* onUpdate = nullptr)
+    //explicit State(T id,
+    //  std::string name = "default",
+    //  Functor* onEnter = nullptr,
+    //  Functor* onExit = nullptr,
+    //  Functor* onUpdate = nullptr)
+    //  : mName(name)
+    //  , mID(id)
+    //  , mOnEnter (onEnter)
+    //  , mOnExit(onExit)
+    //  , mOnUpdate(onUpdate)
+    //{
+    //}
+
+    explicit State(FiniteStateMachine<T>& fsm, T id,
+      std::string name = "default")
       : mName(name)
       , mID(id)
-      , mOnEnter (onEnter)
-      , mOnExit(onExit)
-      , mOnUpdate(onUpdate)
+      , mFsm(fsm)
     {
     }
 
@@ -49,33 +63,34 @@ namespace Patterns
 
     virtual void enter()
     {
-      if (mOnEnter)
-      {
-        (*mOnEnter)(*this);
-      }
+      //if (mOnEnter)
+      //{
+      //  (*mOnEnter)(*this);
+      //}
     }
 
     virtual void exit()
     {
-      if (mOnExit)
-      {
-        (*mOnExit)(*this);
-      }
+      //if (mOnExit)
+      //{
+      //  (*mOnExit)(*this);
+      //}
     }
     virtual void update()
     {
-      if (mOnUpdate)
-      {
-        (*mOnUpdate)(*this);
-      }
+      //if (mOnUpdate)
+      //{
+      //  (*mOnUpdate)(*this);
+      //}
     }
-  private:
+  protected:
     std::string mName;
     T mID;
+    FiniteStateMachine<T>& mFsm;
 
-    Functor* mOnEnter;
-    Functor* mOnExit;
-    Functor* mOnUpdate;
+    //Functor* mOnEnter;
+    //Functor* mOnExit;
+    //Functor* mOnUpdate;
   };
 
   template <typename T>
@@ -88,64 +103,77 @@ namespace Patterns
 
   // A map to represent the a set of states.
   protected:
-    std::map<T, State<T>*> mStates;
+    std::map<T, std::unique_ptr<State<T>>> mStates;
 
     // The current state.
     State<T>* mCurrentState;
 
   public:
     FiniteStateMachine()
-      : mCurrentState(0)
+      : mCurrentState(nullptr)
     {
     }
 
-    void add(State<T> *state)
+    template <class S>
+    State<T>& add(T id)
     {
-      if (state == nullptr)
-        return;
-      add(state->getID(), state);
-      //mStates[state->getID()] = state;
+      static_assert(not std::is_same<State<T>, S>());
+      mStates[id] = std::make_unique<S>(*this);
+      return *mStates[id];
     }
 
-    void add(T stateID, State<T>* state)
+    //void add(State<T> *state)
+    //{
+    //  if (state == nullptr)
+    //    return;
+    //  add(state->getID(), state);
+    //  //mStates[state->getID()] = state;
+    //}
+
+    //void add(T stateID, State<T>* state)
+    //{
+    //  if (mStates.find(stateID) == mStates.end())
+    //  {
+    //    mStates.insert(std::make_pair(stateID, state));
+    //  }
+    //  else
+    //  {
+    //    assert(0);
+    //  }
+    //}
+
+    State<T>& getState(T stateID)
     {
-      if (mStates.find(stateID) == mStates.end())
-      {
-        mStates.insert(std::make_pair(stateID, state));
-      }
-      else
-      {
-        assert(0);
-      }
+      //if (mStates.find(stateID) != mStates.end())
+      return *mStates[stateID];
+      //return nullptr;
     }
 
-    State<T>* getState(T stateID)
+    State<T>& getCurrentState()
     {
-      if (mStates.find(stateID) != mStates.end())
-        return mStates[stateID];
-      return nullptr;
+      return *mCurrentState;
     }
 
-    State<T>* getCurrentState()
+    const State<T>& getCurrentState() const
     {
-      return mCurrentState;
-    }
-
-    const State<T>* getCurrentState() const
-    {
-      return mCurrentState;
+      return *mCurrentState;
     }
     
     void setCurrentState(T stateID)
     {
-      State<T>* state = getState(stateID);
-      assert(state != nullptr);
-      if (state != nullptr)
+      State<T>* state = &getState(stateID);
+      setCurrentState(state);
+    }
+
+    void update()
+    {
+      if (mCurrentState != nullptr)
       {
-        setCurrentState(state);
+        mCurrentState->update();
       }
     }
 
+  protected:
     void setCurrentState(State<T>* state)
     {
       if (mCurrentState == state)
@@ -163,14 +191,6 @@ namespace Patterns
       if (mCurrentState != nullptr)
       {
         mCurrentState->enter();
-      }
-    }
-
-    void update()
-    {
-      if (mCurrentState != nullptr)
-      {
-        mCurrentState->update();
       }
     }
   };

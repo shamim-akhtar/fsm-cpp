@@ -15,34 +15,32 @@ enum class TurnstileStateType
 };
 
 
-template <typename T> class Func : public State<T>::Functor
-{
-  std::string _name;
-public:
-  explicit Func(std::string name)
-    : _name(name)
-  {
-
-  }
-  void operator()(State<T>& state) override
-  {
-    std::cout << "Called " + _name << std::endl;
-  }
-};
+//template <typename T> class Func : public State<T>::Functor
+//{
+//  std::string _name;
+//public:
+//  explicit Func(std::string name)
+//    : _name(name)
+//  {
+//
+//  }
+//  void operator()(State<T>& state) override
+//  {
+//    std::cout << "Called " + _name << std::endl;
+//  }
+//};
 
 class TurnstileLockedState : public State<TurnstileStateType>
 {
-  FiniteStateMachine<TurnstileStateType>& mFsm;
 public:
   TurnstileLockedState(FiniteStateMachine<TurnstileStateType>& fsm)
-    : State<TurnstileStateType>(
+    : State<TurnstileStateType>(fsm,
       TurnstileStateType::LOCKED, 
-      "Locked", 
+      "Locked"/*, 
       new Func<TurnstileStateType>("OnEnter"),
       new Func<TurnstileStateType>("OnExit"),
-      new Func<TurnstileStateType>("OnUpdate")
+      new Func<TurnstileStateType>("OnUpdate")*/
       )
-    , mFsm(fsm)
   {
   }
 
@@ -69,11 +67,9 @@ public:
 
 class TurnstileUnLockedState : public State<TurnstileStateType>
 {
-  FiniteStateMachine<TurnstileStateType>& mFsm;
 public:
   TurnstileUnLockedState(FiniteStateMachine<TurnstileStateType>& fsm)
-    : State<TurnstileStateType>(TurnstileStateType::UNLOCKED, "Unlocked")
-    , mFsm(fsm)
+    : State<TurnstileStateType>(fsm,TurnstileStateType::UNLOCKED, "Unlocked")
   {
   }
 
@@ -106,11 +102,13 @@ int main(int argc, char* argv)
 
   // create the state machine for the turnstile.
   std::unique_ptr<FiniteStateMachine<TurnstileStateType>> fsm = std::make_unique<FiniteStateMachine<TurnstileStateType>>();
-  std::unique_ptr<TurnstileLockedState> state_locked = std::make_unique<TurnstileLockedState>(*fsm);
-  std::unique_ptr<TurnstileUnLockedState> state_unlocked = std::make_unique<TurnstileUnLockedState>(*fsm);
+  //std::unique_ptr<TurnstileLockedState> state_locked = std::make_unique<TurnstileLockedState>(*fsm);
+  //std::unique_ptr<TurnstileUnLockedState> state_unlocked = std::make_unique<TurnstileUnLockedState>(*fsm);
 
-  fsm->add(state_locked.get());
-  fsm->add(state_unlocked.get());
+  //fsm->add(state_locked.get());
+  //fsm->add(state_unlocked.get());
+  State<TurnstileStateType>& state_locked = fsm->add<TurnstileLockedState>(TurnstileStateType::LOCKED);
+  State<TurnstileStateType>& state_unlocked = fsm->add<TurnstileLockedState>(TurnstileStateType::UNLOCKED);
 
   fsm->setCurrentState(TurnstileStateType::LOCKED);
 

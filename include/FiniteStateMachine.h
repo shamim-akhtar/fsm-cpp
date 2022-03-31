@@ -13,20 +13,6 @@ namespace Patterns
   class State
   {
   public:
-    // Removing functor. Might be redundant for now.
-    // Will bring back later is needed.
-    // 
-    //// A functor for callbacks 
-    //class Functor
-    //{
-    //public:
-    //  virtual ~Functor() {}
-    //  virtual void operator()(State<T>& state)
-    //  {
-    //  }
-    //};
-
-  public:
     // The ID of the state.
     inline T getID()
     {
@@ -37,19 +23,6 @@ namespace Patterns
     {
       return mName;
     }
-
-    //explicit State(T id,
-    //  std::string name = "default",
-    //  Functor* onEnter = nullptr,
-    //  Functor* onExit = nullptr,
-    //  Functor* onUpdate = nullptr)
-    //  : mName(name)
-    //  , mID(id)
-    //  , mOnEnter (onEnter)
-    //  , mOnExit(onExit)
-    //  , mOnUpdate(onUpdate)
-    //{
-    //}
 
     explicit State(FiniteStateMachine<T>& fsm, T id,
       std::string name = "default")
@@ -63,34 +36,18 @@ namespace Patterns
 
     virtual void enter()
     {
-      //if (mOnEnter)
-      //{
-      //  (*mOnEnter)(*this);
-      //}
     }
 
     virtual void exit()
     {
-      //if (mOnExit)
-      //{
-      //  (*mOnExit)(*this);
-      //}
     }
     virtual void update()
     {
-      //if (mOnUpdate)
-      //{
-      //  (*mOnUpdate)(*this);
-      //}
     }
   protected:
     std::string mName;
     T mID;
     FiniteStateMachine<T>& mFsm;
-
-    //Functor* mOnEnter;
-    //Functor* mOnExit;
-    //Functor* mOnUpdate;
   };
 
   template <typename T>
@@ -122,31 +79,9 @@ namespace Patterns
       return *mStates[id];
     }
 
-    //void add(State<T> *state)
-    //{
-    //  if (state == nullptr)
-    //    return;
-    //  add(state->getID(), state);
-    //  //mStates[state->getID()] = state;
-    //}
-
-    //void add(T stateID, State<T>* state)
-    //{
-    //  if (mStates.find(stateID) == mStates.end())
-    //  {
-    //    mStates.insert(std::make_pair(stateID, state));
-    //  }
-    //  else
-    //  {
-    //    assert(0);
-    //  }
-    //}
-
     State<T>& getState(T stateID)
     {
-      //if (mStates.find(stateID) != mStates.end())
       return *mStates[stateID];
-      //return nullptr;
     }
 
     State<T>& getCurrentState()
